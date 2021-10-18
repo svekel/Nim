@@ -296,12 +296,11 @@ proc useVarNoInitCheck(a: PEffects; n: PNode; s: PSym) =
   if {sfGlobal, sfThread} * s.flags != {} and s.kind in {skVar, skLet} and
       s.magic != mNimvm:
     if s.guard != nil: guardGlobal(a, n, s.guard)
-    if strictEffects notin a.c.features:
-      if {sfGlobal, sfThread} * s.flags == {sfGlobal} and
-          (tfHasGCedMem in s.typ.flags or s.typ.isGCedMem):
-        #if a.config.hasWarn(warnGcUnsafe): warnAboutGcUnsafe(n)
-        markGcUnsafe(a, s)
-      markSideEffect(a, s, n.info)
+    if {sfGlobal, sfThread} * s.flags == {sfGlobal} and
+        (tfHasGCedMem in s.typ.flags or s.typ.isGCedMem):
+      #if a.config.hasWarn(warnGcUnsafe): warnAboutGcUnsafe(n)
+      markGcUnsafe(a, s)
+    markSideEffect(a, s, n.info)
   if s.owner != a.owner and s.kind in {skVar, skLet, skForVar, skResult, skParam} and
      {sfGlobal, sfThread} * s.flags == {}:
     a.isInnerProc = true
@@ -962,6 +961,8 @@ proc castBlock(tracked: PEffects, pragma: PNode, bc: var PragmaBlockContext) =
     else:
       bc.exc = newNodeI(nkArgList, pragma.info)
       bc.exc.add n
+  of wUncheckedAssign:
+    discard "handled in sempass1"
   else:
     localError(tracked.config, pragma.info,
         "invalid pragma block: " & $pragma)
@@ -1419,7 +1420,7 @@ proc trackProc*(c: PContext; s: PSym, body: PNode) =
   let p = s.ast[pragmasPos]
   let raisesSpec = effectSpec(p, wRaises)
   if not isNil(raisesSpec):
-    checkRaisesSpec(g, emitWarnings, raisesSpec, t.exc, "can raise an unlisted exception: ",
+    checkRaisesSpec(g, false, raisesSpec, t.exc, "can raise an unlisted exception: ",
                     hints=on, subtypeRelation, hintsArg=s.ast[0])
     # after the check, use the formal spec:
     effects[exceptionEffects] = raisesSpec
@@ -1428,7 +1429,7 @@ proc trackProc*(c: PContext; s: PSym, body: PNode) =
 
   let tagsSpec = effectSpec(p, wTags)
   if not isNil(tagsSpec):
-    checkRaisesSpec(g, emitWarnings, tagsSpec, t.tags, "can have an unlisted effect: ",
+    checkRaisesSpec(g, false, tagsSpec, t.tags, "can have an unlisted effect: ",
                     hints=off, subtypeRelation)
     # after the check, use the formal spec:
     effects[tagEffects] = tagsSpec

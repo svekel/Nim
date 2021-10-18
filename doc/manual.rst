@@ -700,6 +700,25 @@ contain a dot: `{..}` are the three tokens `{`:tok:, `..`:tok:, `}`:tok:
 and not the two tokens `{.`:tok:, `.}`:tok:.
 
 
+Unicode Operators
+-----------------
+
+Under the `--experimental:unicodeOperators` switch these Unicode operators are
+also parsed as operators::
+
+  ∙ ∘ × ★ ⊗ ⊘ ⊙ ⊛ ⊠ ⊡ ∩ ∧ ⊓   # same priority as * (multiplication)
+  ± ⊕ ⊖ ⊞ ⊟ ∪ ∨ ⊔             # same priority as + (addition)
+
+
+If enabled, Unicode operators can be combined with non-Unicode operator
+symbols. The usual precedence extensions then apply, for example, `⊠=` is an
+assignment like operator just like `*=` is.
+
+No Unicode normalization step is performed.
+
+**Note**: Due to parser limitations one **cannot** enable this feature via a
+pragma `{.experimental: "unicodeOperators".}` reliably.
+
 
 Syntax
 ======
@@ -1834,6 +1853,41 @@ A small example:
   # also valid, since unknownKindBounded can only contain the values nkAdd or nkSub
   let unknownKindBounded = range[nkAdd..nkSub](unknownKind)
   z = Node(kind: unknownKindBounded, leftOp: Node(), rightOp: Node())
+
+
+cast uncheckedAssign
+--------------------
+
+Some restrictions for case objects can be disabled via a `{.cast(unsafeAssign).}` section:
+
+.. code-block:: nim
+    :test: "nim c $1"
+
+  type
+    TokenKind* = enum
+      strLit, intLit
+    Token = object
+      case kind*: TokenKind
+      of strLit:
+        s*: string
+      of intLit:
+        i*: int64
+
+  proc passToVar(x: var TokenKind) = discard
+
+  var t = Token(kind: strLit, s: "abc")
+
+  {.cast(uncheckedAssign).}:
+    # inside the 'cast' section it is allowed to pass 't.kind' to a 'var T' parameter:
+    passToVar(t.kind)
+
+    # inside the 'cast' section it is allowed to set field 's' even though the
+    # constructed 'kind' field has an unknown value:
+    t = Token(kind: t.kind, s: "abc")
+
+    # inside the 'cast' section it is allowed to assign to the 't.kind' field directly:
+    t.kind = intLit
+
 
 Set type
 --------
