@@ -24,7 +24,7 @@ proc reprBool(x: bool): string {.compilerRtl.} =
 proc reprEnum(e: int, typ: PNimType): string {.compilerRtl.} =
   var tmp: bool
   let item = typ.node.sons[e]
-  {.emit: "`tmp` = `item` !== undefined".}
+  {.emit: "`tmp` = `item` !== undefined;".}
   if tmp:
     result = makeNimstrLit(item.name)
   else:

@@ -103,11 +103,11 @@ proc nimFloatToString(a: float): cstring =
       return n.toString().match(/^-?\d+$/);
     }
     if (Number.isSafeInteger(`a`))
-      `result` = `a` === 0 && 1 / `a` < 0 ? "-0.0" : `a`+".0"
+      `result` = `a` === 0 && 1 / `a` < 0 ? "-0.0" : `a`+".0";
     else {
-      `result` = `a`+""
+      `result` = `a`+"";
       if(nimOnlyDigitsOrMinus(`result`)){
-        `result` = `a`+".0"
+        `result` = `a`+".0";
       }
     }
   """
